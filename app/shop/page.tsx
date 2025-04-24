@@ -1,16 +1,20 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
-import { getProducts } from "@/lib/woocommerce"
+import { getProducts, getTireSize } from "@/lib/woocommerce"
 import type { Product } from "@/types/product"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function ShopPage() {
+  const searchParams = useSearchParams()
+  const sizeParam = searchParams.get("size")
+
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -23,7 +27,18 @@ export default function ShopPage() {
       setLoading(true)
       const { products: data, totalPages: pages } = await getProducts(page)
       setProducts(data)
-      setFilteredProducts(data)
+
+      // Apply size filter from URL if present
+      if (sizeParam) {
+        const filtered = data.filter((product) => {
+          const tireSize = getTireSize(product)
+          return tireSize === sizeParam
+        })
+        setFilteredProducts(filtered)
+      } else {
+        setFilteredProducts(data)
+      }
+
       setTotalPages(pages)
     } catch (err) {
       setError("Помилка завантаження товарів. Спробуйте пізніше.")
@@ -35,7 +50,7 @@ export default function ShopPage() {
 
   useEffect(() => {
     fetchProducts(currentPage)
-  }, [currentPage])
+  }, [currentPage, sizeParam])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -44,8 +59,14 @@ export default function ShopPage() {
       <main className="flex-1 py-12 w-full overflow-x-hidden">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Магазин шин CEAT</h1>
-            <p className="text-gray-600">Знайдіть ідеальні шини для вашої сільськогосподарської техніки</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              {sizeParam ? `Шини розміру ${sizeParam}` : "Магазин шин CEAT"}
+            </h1>
+            <p className="text-gray-600">
+              {sizeParam
+                ? `Всі доступні моделі шин CEAT розміру ${sizeParam}`
+                : "Знайдіть ідеальні шини для вашої сільськогосподарської техніки"}
+            </p>
           </div>
 
           <ProductFilters
@@ -54,6 +75,7 @@ export default function ShopPage() {
               setFilteredProducts(filtered)
               setCurrentPage(1) // Скидаємо на першу сторінку при фільтрації
             }}
+            initialSize={sizeParam || ""}
           />
 
           {loading ? (

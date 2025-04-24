@@ -1,8 +1,13 @@
 import type { Product } from "@/types/product"
 
 const API_URL = "https://teslafun.top/wp-json/wc/v3"
-const CONSUMER_KEY = "ck_0b5789c8597c01a1fe5623cceb77e5c970970f25"
-const CONSUMER_SECRET = "cs_14736558f44039e6cf6caa9ee13490c20ac87c14"
+const CONSUMER_KEY = process.env.WOOCOMMERCE_KEY || ""
+const CONSUMER_SECRET = process.env.WOOCOMMERCE_SECRET || ""
+
+// Перевірка наявності ключів
+if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+  console.warn("WooCommerce API keys are not set. Please check your environment variables.")
+}
 
 export async function getProducts(page = 1, perPage = 40): Promise<{ products: Product[]; totalPages: number }> {
   try {
@@ -43,6 +48,83 @@ export async function getProductById(id: number): Promise<Product | null> {
   } catch (error) {
     console.error(`Error fetching product with ID ${id}:`, error)
     return null
+  }
+}
+
+export async function getAllTireSizes(): Promise<string[]> {
+  try {
+    // Спеціальний запит для отримання всіх атрибутів розміру шин
+    // Використовуємо атрибути WooCommerce для отримання всіх можливих значень
+    const response = await fetch(
+      `${API_URL}/products/attributes?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+      { next: { revalidate: 3600 } },
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch attributes: ${response.status}`)
+    }
+
+    const attributes = await response.json()
+
+    // Знаходимо атрибут розміру (може мати різні назви)
+    const sizeAttribute = attributes.find(
+      (attr: any) => attr.name.toLowerCase().includes("розмір") || attr.name.toLowerCase().includes("size"),
+    )
+
+    if (!sizeAttribute) {
+      console.warn("Size attribute not found, falling back to product-based sizes")
+      return fetchSizesFromAllProducts()
+    }
+
+    // Отримуємо всі терміни (значення) для цього атрибуту
+    const termsResponse = await fetch(
+      `${API_URL}/products/attributes/${sizeAttribute.id}/terms?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&per_page=100`,
+      { next: { revalidate: 3600 } },
+    )
+
+    if (!termsResponse.ok) {
+      throw new Error(`Failed to fetch attribute terms: ${termsResponse.status}`)
+    }
+
+    const terms = await termsResponse.json()
+
+    // Витягуємо назви термінів (розміри шин)
+    const sizes = terms.map((term: any) => term.name)
+
+    return sizes.sort()
+  } catch (error) {
+    console.error("Error fetching all tire sizes:", error)
+    // Якщо сталася помилка, спробуємо отримати розміри з усіх продуктів
+    return fetchSizesFromAllProducts()
+  }
+}
+
+// Резервний метод: отримання розмірів з усіх продуктів
+async function fetchSizesFromAllProducts(): Promise<string[]> {
+  try {
+    const sizes = new Set<string>()
+    let page = 1
+    let hasMorePages = true
+
+    // Отримуємо всі продукти постранично
+    while (hasMorePages) {
+      const { products, totalPages } = await getProducts(page, 100)
+
+      products.forEach((product) => {
+        const size = getTireSize(product)
+        if (size && size !== "Не вказано") {
+          sizes.add(size)
+        }
+      })
+
+      page++
+      hasMorePages = page <= totalPages
+    }
+
+    return Array.from(sizes).sort()
+  } catch (error) {
+    console.error("Error fetching sizes from all products:", error)
+    return []
   }
 }
 

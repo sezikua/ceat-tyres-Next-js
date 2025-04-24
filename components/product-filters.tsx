@@ -1,30 +1,56 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { Product } from "@/types/product"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, SlidersHorizontal } from "lucide-react"
-import { getUniqueTireSizes, getTireSize } from "@/lib/woocommerce"
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react"
+import { getAllTireSizes, getTireSize } from "@/lib/woocommerce"
 
 interface ProductFiltersProps {
   products: Product[]
   onFilter: (filteredProducts: Product[]) => void
+  initialSize?: string
 }
 
-export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
+export function ProductFilters({ products, onFilter, initialSize = "" }: ProductFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("")
-  const [selectedSize, setSelectedSize] = useState("")
+  const [selectedSize, setSelectedSize] = useState(initialSize)
   const [showFilters, setShowFilters] = useState(false)
+  const [sizes, setSizes] = useState<string[]>([])
+  const [loadingSizes, setLoadingSizes] = useState(true)
 
-  // Extract unique categories and brands
+  // Extract unique categories
   const categories = Array.from(
     new Set(products.flatMap((product) => product.categories?.map((cat) => cat.name) || [])),
   ).sort()
 
-  const sizes = getUniqueTireSizes(products)
+  // Fetch all tire sizes
+  useEffect(() => {
+    async function fetchSizes() {
+      try {
+        setLoadingSizes(true)
+        const allSizes = await getAllTireSizes()
+        setSizes(allSizes)
+      } catch (error) {
+        console.error("Error fetching tire sizes:", error)
+      } finally {
+        setLoadingSizes(false)
+      }
+    }
+
+    fetchSizes()
+  }, [])
+
+  // Apply initial size filter if provided
+  useEffect(() => {
+    if (initialSize && products.length > 0) {
+      setSelectedSize(initialSize)
+      handleFilter()
+    }
+  }, [initialSize, products])
 
   const handleFilter = () => {
     let filtered = [...products]
@@ -95,9 +121,16 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
 
           <Select value={selectedSize} onValueChange={setSelectedSize}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Розмір шини" />
+              {loadingSizes ? (
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span>Завантаження...</span>
+                </div>
+              ) : (
+                <SelectValue placeholder="Розмір шини" />
+              )}
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px]">
               <SelectItem value="all">Всі розміри</SelectItem>
               {sizes.map((size) => (
                 <SelectItem key={size} value={size}>
