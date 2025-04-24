@@ -28,7 +28,7 @@ export function ProductCard({ product }: ProductCardProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative h-64 overflow-hidden bg-gray-100">
+      <Link href={`/shop/${product.id}`} className="relative h-64 overflow-hidden bg-gray-100 block">
         <Image
           src={imageUrl || "/placeholder.svg"}
           alt={product.name}
@@ -43,11 +43,16 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="absolute top-2 left-2">
           <Badge className="bg-blue-600 text-white">{brand}</Badge>
         </div>
-      </div>
+      </Link>
 
       <div className="p-5">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-bold text-lg line-clamp-2 flex-1">{product.name}</h3>
+          <Link
+            href={`/shop/${product.id}`}
+            className="font-bold text-lg line-clamp-2 flex-1 hover:text-blue-600 transition-colors"
+          >
+            {product.name}
+          </Link>
         </div>
 
         <div className="mb-4 text-sm text-gray-600">

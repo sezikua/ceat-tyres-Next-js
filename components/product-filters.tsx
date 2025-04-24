@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, SlidersHorizontal } from "lucide-react"
+import { getUniqueTireSizes, getTireSize } from "@/lib/woocommerce"
 
 interface ProductFiltersProps {
   products: Product[]
@@ -15,7 +16,7 @@ interface ProductFiltersProps {
 export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("")
-  const [selectedBrand, setSelectedBrand] = useState("")
+  const [selectedSize, setSelectedSize] = useState("")
   const [showFilters, setShowFilters] = useState(false)
 
   // Extract unique categories and brands
@@ -23,16 +24,7 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
     new Set(products.flatMap((product) => product.categories?.map((cat) => cat.name) || [])),
   ).sort()
 
-  const brands = Array.from(
-    new Set(
-      products.map((product) => {
-        if (product.brands && product.brands.length > 0) {
-          return product.brands[0].name
-        }
-        return "CEAT"
-      }),
-    ),
-  ).sort()
+  const sizes = getUniqueTireSizes(products)
 
   const handleFilter = () => {
     let filtered = [...products]
@@ -49,12 +41,10 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
       filtered = filtered.filter((product) => product.categories?.some((cat) => cat.name === selectedCategory))
     }
 
-    if (selectedBrand) {
+    if (selectedSize) {
       filtered = filtered.filter((product) => {
-        if (product.brands && product.brands.length > 0) {
-          return product.brands[0].name === selectedBrand
-        }
-        return "CEAT" === selectedBrand
+        const tireSize = getTireSize(product)
+        return tireSize === selectedSize
       })
     }
 
@@ -64,7 +54,7 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
   const resetFilters = () => {
     setSearchTerm("")
     setSelectedCategory("")
-    setSelectedBrand("")
+    setSelectedSize("")
     onFilter(products)
   }
 
@@ -103,15 +93,15 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
             </SelectContent>
           </Select>
 
-          <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+          <Select value={selectedSize} onValueChange={setSelectedSize}>
             <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Бренд" />
+              <SelectValue placeholder="Розмір шини" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Всі бренди</SelectItem>
-              {brands.map((brand) => (
-                <SelectItem key={brand} value={brand}>
-                  {brand}
+              <SelectItem value="all">Всі розміри</SelectItem>
+              {sizes.map((size) => (
+                <SelectItem key={size} value={size}>
+                  {size}
                 </SelectItem>
               ))}
             </SelectContent>

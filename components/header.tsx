@@ -37,7 +37,6 @@ export function Header() {
           {[
             { name: "Головна", path: "/" },
             { name: "Магазин", path: "/shop" },
-            { name: "Продукція", path: "/products" },
             { name: "Для кого", path: "/for-whom" },
             { name: "Про нас", path: "/about" },
             { name: "Контакти", path: "/contacts" },
@@ -88,7 +87,6 @@ export function Header() {
               {[
                 { name: "Головна", path: "/" },
                 { name: "Магазин", path: "/shop" },
-                { name: "Продукція", path: "/products" },
                 { name: "Для кого", path: "/for-whom" },
                 { name: "Про нас", path: "/about" },
                 { name: "Контакти", path: "/contacts" },

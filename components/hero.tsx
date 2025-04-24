@@ -6,6 +6,7 @@ import { motion, useScroll, useTransform } from "framer-motion"
 import { ChevronRight, Phone, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 export function Hero() {
   const heroRef = useRef(null)
@@ -41,10 +42,12 @@ export function Hero() {
             Індійська якість, перевірена українськими аграріями
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button className="group bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-7 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
-              Дивитись каталог
-              <ChevronRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-            </Button>
+            <Link href="/shop">
+              <Button className="group bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8 py-7 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
+                Дивитись каталог
+                <ChevronRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
+              </Button>
+            </Link>
             <Button
               variant="outline"
               className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/30 px-8 py-7 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"

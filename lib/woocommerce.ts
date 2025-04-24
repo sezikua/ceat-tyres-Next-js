@@ -4,10 +4,10 @@ const API_URL = "https://teslafun.top/wp-json/wc/v3"
 const CONSUMER_KEY = "ck_0b5789c8597c01a1fe5623cceb77e5c970970f25"
 const CONSUMER_SECRET = "cs_14736558f44039e6cf6caa9ee13490c20ac87c14"
 
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(page = 1, perPage = 40): Promise<{ products: Product[]; totalPages: number }> {
   try {
     const response = await fetch(
-      `${API_URL}/products?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+      `${API_URL}/products?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&per_page=${perPage}&page=${page}`,
       { next: { revalidate: 3600 } }, // Revalidate every hour
     )
 
@@ -16,10 +16,14 @@ export async function getProducts(): Promise<Product[]> {
     }
 
     const products = await response.json()
-    return products
+
+    // Get total pages from headers
+    const totalPages = Number.parseInt(response.headers.get("X-WP-TotalPages") || "1", 10)
+
+    return { products, totalPages }
   } catch (error) {
     console.error("Error fetching products:", error)
-    return []
+    return { products: [], totalPages: 0 }
   }
 }
 
@@ -94,4 +98,17 @@ export function getBrand(product: Product): string {
   }
 
   return "CEAT"
+}
+
+export function getUniqueTireSizes(products: Product[]): string[] {
+  const sizes = new Set<string>()
+
+  products.forEach((product) => {
+    const size = getTireSize(product)
+    if (size && size !== "Не вказано") {
+      sizes.add(size)
+    }
+  })
+
+  return Array.from(sizes).sort()
 }

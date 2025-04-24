@@ -8,30 +8,34 @@ import { ProductFilters } from "@/components/product-filters"
 import { getProducts } from "@/lib/woocommerce"
 import type { Product } from "@/types/product"
 import { Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+
+  async function fetchProducts(page = 1) {
+    try {
+      setLoading(true)
+      const { products: data, totalPages: pages } = await getProducts(page)
+      setProducts(data)
+      setFilteredProducts(data)
+      setTotalPages(pages)
+    } catch (err) {
+      setError("Помилка завантаження товарів. Спробуйте пізніше.")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        setLoading(true)
-        const data = await getProducts()
-        setProducts(data)
-        setFilteredProducts(data)
-      } catch (err) {
-        setError("Помилка завантаження товарів. Спробуйте пізніше.")
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProducts()
-  }, [])
+    fetchProducts(currentPage)
+  }, [currentPage])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -44,7 +48,13 @@ export default function ShopPage() {
             <p className="text-gray-600">Знайдіть ідеальні шини для вашої сільськогосподарської техніки</p>
           </div>
 
-          <ProductFilters products={products} onFilter={setFilteredProducts} />
+          <ProductFilters
+            products={products}
+            onFilter={(filtered) => {
+              setFilteredProducts(filtered)
+              setCurrentPage(1) // Скидаємо на першу сторінку при фільтрації
+            }}
+          />
 
           {loading ? (
             <div className="flex justify-center items-center py-20">
@@ -62,6 +72,38 @@ export default function ShopPage() {
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
+            </div>
+          )}
+
+          {!loading && !error && filteredProducts.length > 0 && (
+            <div className="mt-10 flex justify-center">
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Попередня
+                </Button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Наступна
+                </Button>
+              </div>
             </div>
           )}
         </div>
