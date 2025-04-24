@@ -6,7 +6,8 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
-import { getProducts, getTireSize } from "@/lib/woocommerce"
+import { getProducts } from "@/lib/woocommerce"
+import { fetchProductsBySize } from "@/lib/fetchProductsBySize"
 import type { Product } from "@/types/product"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -25,21 +26,20 @@ export default function ShopPage() {
   async function fetchProducts(page = 1) {
     try {
       setLoading(true)
-      const { products: data, totalPages: pages } = await getProducts(page)
-      setProducts(data)
 
-      // Apply size filter from URL if present
+      // Якщо вказано розмір, використовуємо спеціальний запит
       if (sizeParam) {
-        const filtered = data.filter((product) => {
-          const tireSize = getTireSize(product)
-          return tireSize === sizeParam
-        })
-        setFilteredProducts(filtered)
-      } else {
+        const { products: data, totalPages: pages } = await fetchProductsBySize(sizeParam, page)
+        setProducts(data)
         setFilteredProducts(data)
+        setTotalPages(pages)
+      } else {
+        // Інакше отримуємо всі продукти
+        const { products: data, totalPages: pages } = await getProducts(page)
+        setProducts(data)
+        setFilteredProducts(data)
+        setTotalPages(pages)
       }
-
-      setTotalPages(pages)
     } catch (err) {
       setError("Помилка завантаження товарів. Спробуйте пізніше.")
       console.error(err)

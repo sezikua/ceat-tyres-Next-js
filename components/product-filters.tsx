@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react"
-import { getAllTireSizes, getTireSize } from "@/lib/woocommerce"
+import { fetchAllTyreSizes } from "@/lib/fetchTyreSizes"
+import { getTireSize } from "@/lib/woocommerce"
 
 interface ProductFiltersProps {
   products: Product[]
@@ -29,19 +30,19 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
 
   // Fetch all tire sizes
   useEffect(() => {
-    async function fetchSizes() {
+    async function loadSizes() {
       try {
         setLoadingSizes(true)
-        const allSizes = await getAllTireSizes()
+        const allSizes = await fetchAllTyreSizes()
         setSizes(allSizes)
       } catch (error) {
-        console.error("Error fetching tire sizes:", error)
+        console.error("Error loading tire sizes:", error)
       } finally {
         setLoadingSizes(false)
       }
     }
 
-    fetchSizes()
+    loadSizes()
   }, [])
 
   // Apply initial size filter if provided
@@ -63,11 +64,11 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
       )
     }
 
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== "all") {
       filtered = filtered.filter((product) => product.categories?.some((cat) => cat.name === selectedCategory))
     }
 
-    if (selectedSize) {
+    if (selectedSize && selectedSize !== "all") {
       filtered = filtered.filter((product) => {
         const tireSize = getTireSize(product)
         return tireSize === selectedSize
