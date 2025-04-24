@@ -6,8 +6,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ProductCard } from "@/components/product-card"
 import { ProductFilters } from "@/components/product-filters"
-import { getProducts } from "@/lib/woocommerce"
-import { fetchProductsBySize } from "@/lib/fetchProductsBySize"
+import { getProducts, getTireSize } from "@/lib/woocommerce"
 import type { Product } from "@/types/product"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,18 +26,20 @@ export default function ShopPage() {
     try {
       setLoading(true)
 
-      // Якщо вказано розмір, використовуємо спеціальний запит
-      if (sizeParam) {
-        const { products: data, totalPages: pages } = await fetchProductsBySize(sizeParam, page)
-        setProducts(data)
-        setFilteredProducts(data)
-        setTotalPages(pages)
+      // Отримуємо всі продукти
+      const { products: data, totalPages: pages } = await getProducts(page, 100) // Збільшуємо кількість продуктів на сторінці
+      setProducts(data)
+      setTotalPages(pages)
+
+      // Якщо вказано розмір, фільтруємо продукти на клієнті
+      if (sizeParam && sizeParam !== "all") {
+        const filtered = data.filter((product) => {
+          const tireSize = getTireSize(product)
+          return tireSize === sizeParam
+        })
+        setFilteredProducts(filtered)
       } else {
-        // Інакше отримуємо всі продукти
-        const { products: data, totalPages: pages } = await getProducts(page)
-        setProducts(data)
         setFilteredProducts(data)
-        setTotalPages(pages)
       }
     } catch (err) {
       setError("Помилка завантаження товарів. Спробуйте пізніше.")
@@ -60,10 +61,10 @@ export default function ShopPage() {
         <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              {sizeParam ? `Шини розміру ${sizeParam}` : "Магазин шин CEAT"}
+              {sizeParam && sizeParam !== "all" ? `Шини розміру ${sizeParam}` : "Магазин шин CEAT"}
             </h1>
             <p className="text-gray-600">
-              {sizeParam
+              {sizeParam && sizeParam !== "all"
                 ? `Всі доступні моделі шин CEAT розміру ${sizeParam}`
                 : "Знайдіть ідеальні шини для вашої сільськогосподарської техніки"}
             </p>

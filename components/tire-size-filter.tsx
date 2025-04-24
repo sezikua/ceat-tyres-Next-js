@@ -58,15 +58,15 @@ export function TyreSizeFilter() {
   const handleSizeSelect = (size: string) => {
     setSelectedSize(size)
     setIsOpen(false)
-    router.push(`/?size=${encodeURIComponent(size)}`)
+    router.push(`/shop?size=${encodeURIComponent(size)}`)
   }
 
   // Handle search button click
   const handleSearch = () => {
     if (selectedSize) {
-      router.push(`/?size=${encodeURIComponent(selectedSize)}`)
+      router.push(`/shop?size=${encodeURIComponent(selectedSize)}`)
     } else {
-      router.push("/")
+      router.push("/shop")
     }
   }
 
@@ -103,7 +103,9 @@ export function TyreSizeFilter() {
                   </div>
                 </div>
 
-                <div className="max-h-60 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto">
+                  {" "}
+                  {/* Збільшено висоту для відображення більшої кількості розмірів */}
                   {loading ? (
                     <div className="p-4 text-center text-gray-500 flex items-center justify-center">
                       <Loader2 className="h-5 w-5 animate-spin mr-2" />

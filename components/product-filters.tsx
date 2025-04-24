@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import type { Product } from "@/types/product"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, SlidersHorizontal, Loader2 } from "lucide-react"
+import { Search, SlidersHorizontal, Loader2, ChevronDown } from "lucide-react"
 import { fetchAllTyreSizes } from "@/lib/fetchTyreSizes"
 import { getTireSize } from "@/lib/woocommerce"
 
@@ -21,7 +20,11 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
   const [selectedSize, setSelectedSize] = useState(initialSize)
   const [showFilters, setShowFilters] = useState(false)
   const [sizes, setSizes] = useState<string[]>([])
+  const [filteredSizes, setFilteredSizes] = useState<string[]>([])
   const [loadingSizes, setLoadingSizes] = useState(true)
+  const [sizeSearchTerm, setSizeSearchTerm] = useState("")
+  const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false)
+  const sizeDropdownRef = useRef<HTMLDivElement>(null)
 
   // Extract unique categories
   const categories = Array.from(
@@ -35,6 +38,7 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
         setLoadingSizes(true)
         const allSizes = await fetchAllTyreSizes()
         setSizes(allSizes)
+        setFilteredSizes(allSizes)
       } catch (error) {
         console.error("Error loading tire sizes:", error)
       } finally {
@@ -45,6 +49,16 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
     loadSizes()
   }, [])
 
+  // Filter sizes based on search term
+  useEffect(() => {
+    if (sizeSearchTerm) {
+      const filtered = sizes.filter((size) => size.toLowerCase().includes(sizeSearchTerm.toLowerCase()))
+      setFilteredSizes(filtered)
+    } else {
+      setFilteredSizes(sizes)
+    }
+  }, [sizeSearchTerm, sizes])
+
   // Apply initial size filter if provided
   useEffect(() => {
     if (initialSize && products.length > 0) {
@@ -52,6 +66,20 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
       handleFilter()
     }
   }, [initialSize, products])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (sizeDropdownRef.current && !sizeDropdownRef.current.contains(event.target as Node)) {
+        setIsSizeDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   const handleFilter = () => {
     let filtered = [...products]
@@ -82,7 +110,14 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
     setSearchTerm("")
     setSelectedCategory("")
     setSelectedSize("")
+    setSizeSearchTerm("")
     onFilter(products)
+  }
+
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size)
+    setIsSizeDropdownOpen(false)
+    // Не викликаємо handleFilter тут, щоб уникнути подвійної фільтрації
   }
 
   return (
@@ -106,42 +141,84 @@ export function ProductFilters({ products, onFilter, initialSize = "" }: Product
         </Button>
 
         <div className={`${showFilters ? "flex" : "hidden"} md:flex flex-col md:flex-row gap-4 w-full`}>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Категорія" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Всі категорії</SelectItem>
+          {/* Категорії */}
+          <div className="relative w-full md:w-auto md:flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Категорія</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Всі категорії</option>
               {categories.map((category) => (
-                <SelectItem key={category} value={category}>
+                <option key={category} value={category}>
                   {category}
-                </SelectItem>
+                </option>
               ))}
-            </SelectContent>
-          </Select>
+            </select>
+          </div>
 
-          <Select value={selectedSize} onValueChange={setSelectedSize}>
-            <SelectTrigger className="w-full">
-              {loadingSizes ? (
-                <div className="flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  <span>Завантаження...</span>
+          {/* Розміри шин з пошуком */}
+          <div className="relative w-full md:w-auto md:flex-1" ref={sizeDropdownRef}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Розмір шини</label>
+            <div
+              className="w-full p-2 border border-gray-300 rounded-lg flex items-center justify-between cursor-pointer"
+              onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)}
+            >
+              <span className={selectedSize ? "text-black" : "text-gray-500"}>
+                {selectedSize || "Оберіть розмір шини"}
+              </span>
+              <ChevronDown
+                className={`h-5 w-5 text-gray-500 transition-transform ${isSizeDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </div>
+
+            {isSizeDropdownOpen && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+                <div className="p-3 border-b">
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Пошук розміру..."
+                      value={sizeSearchTerm}
+                      onChange={(e) => setSizeSearchTerm(e.target.value)}
+                      className="pl-10"
+                      autoFocus
+                    />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  </div>
                 </div>
-              ) : (
-                <SelectValue placeholder="Розмір шини" />
-              )}
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              <SelectItem value="all">Всі розміри</SelectItem>
-              {sizes.map((size) => (
-                <SelectItem key={size} value={size}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <div className="flex gap-2 w-full md:w-auto">
+                <div className="max-h-80 overflow-y-auto">
+                  {loadingSizes ? (
+                    <div className="p-4 text-center text-gray-500 flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      Завантаження розмірів...
+                    </div>
+                  ) : filteredSizes.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">Розміри не знайдено</div>
+                  ) : (
+                    <>
+                      <div className="p-3 hover:bg-gray-100 cursor-pointer" onClick={() => handleSizeSelect("all")}>
+                        Всі розміри
+                      </div>
+                      {filteredSizes.map((size, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 hover:bg-gray-100 cursor-pointer ${selectedSize === size ? "bg-blue-50 font-medium" : ""}`}
+                          onClick={() => handleSizeSelect(size)}
+                        >
+                          {size}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 w-full md:w-auto md:self-end">
             <Button onClick={handleFilter} className="bg-blue-600 hover:bg-blue-700 flex-1 md:flex-none">
               Застосувати
             </Button>
