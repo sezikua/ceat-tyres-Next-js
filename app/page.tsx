@@ -6,7 +6,6 @@ import { Header } from "@/components/header"
 import { Hero } from "@/components/hero"
 import { Advantages } from "@/components/advantages"
 import { Categories } from "@/components/categories"
-import { TireSearch } from "@/components/tire-search"
 import { Clients } from "@/components/clients"
 import { AboutCompany } from "@/components/about-company"
 import { NewsSection } from "@/components/news-section"
@@ -31,7 +30,6 @@ export default function Home() {
         <Hero />
         <Advantages />
         <Categories />
-        <TireSearch />
         <Clients />
         <AboutCompany />
         <NewsSection />

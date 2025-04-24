@@ -132,28 +132,63 @@ export function formatPrice(price: string): string {
   return `${Number.parseInt(price).toLocaleString("uk-UA")} ₴`
 }
 
+// Замінимо функцію normalizeTireSize на більш надійну версію:
+
+export function normalizeTireSize(size: string): string {
+  if (!size) return ""
+
+  // Перетворюємо на нижній регістр
+  let normalized = size.toLowerCase()
+
+  // Видаляємо всі пробіли
+  normalized = normalized.replace(/\s+/g, "")
+
+  // Замінюємо всі "/" на "-" (для сумісності з форматом "частина посилання")
+  normalized = normalized.replace(/\//g, "-")
+
+  // Замінюємо крапки на дефіси (для розмірів типу 26.5 -> 26-5)
+  normalized = normalized.replace(/\.(\d)/g, "-$1")
+
+  // Замінюємо "r" або "R" на "r" для уніфікації
+  normalized = normalized.replace(/r/gi, "r")
+
+  // Замінюємо подвійні дефіси на одинарні, якщо такі є
+  normalized = normalized.replace(/--+/g, "-")
+
+  // Видаляємо дефіси на початку і в кінці, якщо такі є
+  normalized = normalized.replace(/^-|-$/g, "")
+
+  return normalized
+}
+
 export function getTireSize(product: Product): string {
+  // Спочатку шукаємо в атрибутах
   const sizeAttribute = product.attributes?.find(
     (attr) =>
       attr.name.toLowerCase() === "розмір" ||
       attr.name.toLowerCase() === "size" ||
-      attr.name.toLowerCase() === "розмір шини",
+      attr.name.toLowerCase() === "розмір шини" ||
+      attr.name.toLowerCase() === "tire size",
   )
 
   if (sizeAttribute && sizeAttribute.options.length > 0) {
     return sizeAttribute.options[0]
   }
 
-  // Try to extract from meta data
+  // Потім шукаємо в мета-даних
   const sizeMeta = product.meta_data?.find(
-    (meta) => meta.key.toLowerCase() === "розмір_шини" || meta.key.toLowerCase() === "tire_size",
+    (meta) =>
+      meta.key.toLowerCase() === "розмір_шини" ||
+      meta.key.toLowerCase() === "tire_size" ||
+      meta.key.toLowerCase() === "pa_розмір" ||
+      meta.key.toLowerCase() === "pa_size",
   )
 
   if (sizeMeta) {
     return sizeMeta.value
   }
 
-  // Try to extract from name
+  // Шукаємо в назві продукту
   const nameMatch = product.name.match(/\d+\/\d+\s*R\s*\d+/i)
   if (nameMatch) {
     return nameMatch[0]

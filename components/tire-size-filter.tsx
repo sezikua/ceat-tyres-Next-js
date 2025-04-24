@@ -76,7 +76,7 @@ export function TyreSizeFilter() {
         <div className="p-8 md:p-10">
           <h2 className="text-2xl font-bold mb-6 text-center">Пошук шин по розміру</h2>
 
-          <div className="relative mb-6">
+          <div className="relative mb-6" style={{ position: "static" }}>
             <div
               className="border border-gray-300 rounded-lg p-4 flex items-center justify-between cursor-pointer"
               onClick={() => setIsOpen(!isOpen)}
@@ -88,7 +88,10 @@ export function TyreSizeFilter() {
             </div>
 
             {isOpen && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+              <div
+                className="fixed inset-x-0 mx-auto max-w-2xl z-[9999] mt-1 bg-white border border-gray-300 rounded-lg shadow-2xl"
+                style={{ width: "calc(100% - 2rem)", maxWidth: "32rem", top: "auto" }}
+              >
                 <div className="p-3 border-b">
                   <div className="relative">
                     <Input
@@ -103,9 +106,7 @@ export function TyreSizeFilter() {
                   </div>
                 </div>
 
-                <div className="max-h-80 overflow-y-auto">
-                  {" "}
-                  {/* Збільшено висоту для відображення більшої кількості розмірів */}
+                <div className="max-h-[400px] overflow-y-auto bg-white">
                   {loading ? (
                     <div className="p-4 text-center text-gray-500 flex items-center justify-center">
                       <Loader2 className="h-5 w-5 animate-spin mr-2" />

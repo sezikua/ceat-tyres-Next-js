@@ -5,8 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ProductCard } from "@/components/product-card"
-import { ProductFilters } from "@/components/product-filters"
-import { getProducts, getTireSize } from "@/lib/woocommerce"
+import { getProducts, getTireSize, normalizeTireSize } from "@/lib/woocommerce"
 import type { Product } from "@/types/product"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -25,19 +24,13 @@ export default function ShopPage() {
   async function fetchProducts(page = 1) {
     try {
       setLoading(true)
-
-      // Отримуємо всі продукти
-      const { products: data, totalPages: pages } = await getProducts(page, 100) // Збільшуємо кількість продуктів на сторінці
+      const { products: data, totalPages: pages } = await getProducts(page, 100)
       setProducts(data)
       setTotalPages(pages)
 
       // Якщо вказано розмір, фільтруємо продукти на клієнті
       if (sizeParam && sizeParam !== "all") {
-        const filtered = data.filter((product) => {
-          const tireSize = getTireSize(product)
-          return tireSize === sizeParam
-        })
-        setFilteredProducts(filtered)
+        filterProductsBySize(data, sizeParam)
       } else {
         setFilteredProducts(data)
       }
@@ -49,9 +42,51 @@ export default function ShopPage() {
     }
   }
 
+  // Оновимо функцію filterProductsBySize для кращого логування та порівняння
+
+  function filterProductsBySize(products: Product[], size: string) {
+    const normalizedSearchSize = normalizeTireSize(size)
+
+    console.log("Шукаємо розмір:", size)
+    console.log("Нормалізований розмір для пошуку:", normalizedSearchSize)
+
+    const filtered = products.filter((product) => {
+      const tireSize = getTireSize(product)
+      const normalizedProductSize = normalizeTireSize(tireSize)
+
+      // Додаємо логування для відстеження
+      if (
+        normalizedProductSize.includes(normalizedSearchSize) ||
+        normalizedSearchSize.includes(normalizedProductSize)
+      ) {
+        console.log(
+          `СПІВПАДІННЯ - Продукт ${product.id}: розмір = ${tireSize}, нормалізований = ${normalizedProductSize}`,
+        )
+        return true
+      } else {
+        console.log(
+          `НЕ СПІВПАДАЄ - Продукт ${product.id}: розмір = ${tireSize}, нормалізований = ${normalizedProductSize}`,
+        )
+        return false
+      }
+    })
+
+    console.log(`Знайдено ${filtered.length} продуктів з розміром ${size}`)
+    setFilteredProducts(filtered)
+  }
+
   useEffect(() => {
     fetchProducts(currentPage)
-  }, [currentPage, sizeParam])
+  }, [currentPage])
+
+  // Додатковий useEffect для фільтрації при зміні параметра URL
+  useEffect(() => {
+    if (products.length > 0 && sizeParam) {
+      filterProductsBySize(products, sizeParam)
+    } else if (products.length > 0) {
+      setFilteredProducts(products)
+    }
+  }, [sizeParam, products])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -68,16 +103,14 @@ export default function ShopPage() {
                 ? `Всі доступні моделі шин CEAT розміру ${sizeParam}`
                 : "Знайдіть ідеальні шини для вашої сільськогосподарської техніки"}
             </p>
-          </div>
 
-          <ProductFilters
-            products={products}
-            onFilter={(filtered) => {
-              setFilteredProducts(filtered)
-              setCurrentPage(1) // Скидаємо на першу сторінку при фільтрації
-            }}
-            initialSize={sizeParam || ""}
-          />
+            {/* Кнопка для скидання фільтра */}
+            {sizeParam && sizeParam !== "all" && (
+              <Button variant="outline" onClick={() => (window.location.href = "/shop")} className="mt-4">
+                Показати всі шини
+              </Button>
+            )}
+          </div>
 
           {loading ? (
             <div className="flex justify-center items-center py-20">
@@ -88,7 +121,11 @@ export default function ShopPage() {
           ) : filteredProducts.length === 0 ? (
             <div className="bg-gray-50 p-8 rounded-lg text-center">
               <h3 className="text-xl font-semibold mb-2">Товари не знайдено</h3>
-              <p className="text-gray-600">Спробуйте змінити параметри фільтрації або пошуку</p>
+              <p className="text-gray-600">
+                {sizeParam
+                  ? `Шини розміру ${sizeParam} відсутні в нашому каталозі. Спробуйте інший розмір.`
+                  : "Спробуйте оновити сторінку або зв'язатися з нами"}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -112,11 +149,9 @@ export default function ShopPage() {
 
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter((page) => {
-                    // Показуємо тільки поточну сторінку, першу, останню та сторінки поруч з поточною
                     return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1
                   })
                   .map((page, index, array) => {
-                    // Додаємо "..." між непослідовними сторінками
                     const showEllipsis = index > 0 && array[index - 1] !== page - 1
 
                     return (
