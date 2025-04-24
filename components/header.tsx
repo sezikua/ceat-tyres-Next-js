@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X } from "lucide-react"
+import { Menu, X, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function Header() {
@@ -34,13 +34,16 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          {["Головна", "Продукція", "Для кого", "Про нас", "Контакти"].map((item, index) => (
-            <Link
-              key={index}
-              href={item === "Головна" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`}
-              className="text-base font-medium relative group text-white"
-            >
-              {item}
+          {[
+            { name: "Головна", path: "/" },
+            { name: "Магазин", path: "/shop" },
+            { name: "Продукція", path: "/products" },
+            { name: "Для кого", path: "/for-whom" },
+            { name: "Про нас", path: "/about" },
+            { name: "Контакти", path: "/contacts" },
+          ].map((item, index) => (
+            <Link key={index} href={item.path} className="text-base font-medium relative group text-white">
+              {item.name}
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300 group-hover:w-full"></span>
             </Link>
           ))}
@@ -50,6 +53,11 @@ export function Header() {
           <div className="flex items-center">
             <span className="text-sm font-medium text-white">🇺🇦 UA</span>
           </div>
+
+          <Link href="/shop" className="hidden md:flex text-white hover:text-orange-200 mr-2">
+            <ShoppingCart className="h-6 w-6" />
+          </Link>
+
           <Button className="hidden md:flex bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-full">
             Замовити консультацію
           </Button>
@@ -77,14 +85,21 @@ export function Header() {
             className="md:hidden bg-white border-t"
           >
             <div className="container py-4 px-4 space-y-4">
-              {["Головна", "Продукція", "Для кого", "Про нас", "Контакти"].map((item, index) => (
+              {[
+                { name: "Головна", path: "/" },
+                { name: "Магазин", path: "/shop" },
+                { name: "Продукція", path: "/products" },
+                { name: "Для кого", path: "/for-whom" },
+                { name: "Про нас", path: "/about" },
+                { name: "Контакти", path: "/contacts" },
+              ].map((item, index) => (
                 <Link
                   key={index}
-                  href={item === "Головна" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`}
+                  href={item.path}
                   className="block py-2 text-lg font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item}
+                  {item.name}
                 </Link>
               ))}
               <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
