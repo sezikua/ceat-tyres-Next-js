@@ -91,8 +91,8 @@ export default function ProductPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
 
-      <main className="flex-1 py-12">
-        <div className="container px-4 md:px-6">
+      <main className="flex-1 py-12 w-full overflow-x-hidden">
+        <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-6">
             <Link href="/shop" className="text-blue-600 hover:underline inline-flex items-center">
               <ChevronLeft className="h-4 w-4 mr-1" />
@@ -185,15 +185,15 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              <Tabs defaultValue="description">
-                <TabsList className="w-full">
-                  <TabsTrigger value="description" className="flex-1">
+              <Tabs defaultValue="description" className="w-full">
+                <TabsList className="w-full grid grid-cols-3">
+                  <TabsTrigger value="description" className="text-sm">
                     Опис
                   </TabsTrigger>
-                  <TabsTrigger value="specifications" className="flex-1">
+                  <TabsTrigger value="specifications" className="text-sm">
                     Характеристики
                   </TabsTrigger>
-                  <TabsTrigger value="delivery" className="flex-1">
+                  <TabsTrigger value="delivery" className="text-sm">
                     Доставка
                   </TabsTrigger>
                 </TabsList>

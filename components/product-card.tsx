@@ -61,16 +61,20 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.categories && product.categories.length > 0 && <p>Категорія: {product.categories[0].name}</p>}
         </div>
 
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-2">
           <div className="text-xl font-bold text-blue-700">{formatPrice(product.price)}</div>
           <div className="flex space-x-2">
             <Link href={`/shop/${product.id}`}>
-              <Button variant="outline" size="sm" className="rounded-full">
+              <Button variant="outline" size="sm" className="rounded-full whitespace-nowrap">
                 <Eye className="h-4 w-4 mr-1" />
                 Деталі
               </Button>
             </Link>
-            <Button disabled={!isInStock} className="rounded-full bg-orange-500 hover:bg-orange-600" size="sm">
+            <Button
+              disabled={!isInStock}
+              className="rounded-full bg-orange-500 hover:bg-orange-600 whitespace-nowrap"
+              size="sm"
+            >
               <ShoppingCart className="h-4 w-4 mr-1" />
               Купити
             </Button>

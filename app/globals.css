@@ -129,3 +129,25 @@ html {
 *:focus-visible {
   @apply outline-none ring-2 ring-orange-500 ring-offset-2;
 }
+
+/* Prevent horizontal scrolling on mobile */
+html,
+body {
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* Fix for mobile overflow issues */
+.container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

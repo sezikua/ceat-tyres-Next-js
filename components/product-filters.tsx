@@ -59,28 +59,28 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
   }
 
   return (
-    <div className="mb-8">
-      <div className="flex flex-col md:flex-row gap-4 items-end">
-        <div className="flex-1">
-          <div className="relative">
+    <div className="mb-8 w-full overflow-hidden">
+      <div className="flex flex-col md:flex-row gap-4 items-end w-full">
+        <div className="flex-1 w-full">
+          <div className="relative w-full">
             <Input
               placeholder="Пошук за назвою або артикулом..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
         </div>
 
-        <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="md:hidden">
+        <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="md:hidden w-full">
           <SlidersHorizontal className="h-4 w-4 mr-2" />
           Фільтри
         </Button>
 
-        <div className={`${showFilters ? "flex" : "hidden"} md:flex flex-col md:flex-row gap-4 w-full md:w-auto`}>
+        <div className={`${showFilters ? "flex" : "hidden"} md:flex flex-col md:flex-row gap-4 w-full`}>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-[180px]">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Категорія" />
             </SelectTrigger>
             <SelectContent>
@@ -94,7 +94,7 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
           </Select>
 
           <Select value={selectedSize} onValueChange={setSelectedSize}>
-            <SelectTrigger className="w-full md:w-[180px]">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Розмір шини" />
             </SelectTrigger>
             <SelectContent>
@@ -107,11 +107,11 @@ export function ProductFilters({ products, onFilter }: ProductFiltersProps) {
             </SelectContent>
           </Select>
 
-          <div className="flex gap-2">
-            <Button onClick={handleFilter} className="bg-blue-600 hover:bg-blue-700">
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button onClick={handleFilter} className="bg-blue-600 hover:bg-blue-700 flex-1 md:flex-none">
               Застосувати
             </Button>
-            <Button variant="outline" onClick={resetFilters}>
+            <Button variant="outline" onClick={resetFilters} className="flex-1 md:flex-none">
               Скинути
             </Button>
           </div>
