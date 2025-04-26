@@ -11,7 +11,6 @@ import { Menu, X, ShoppingCart, Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { fetchAllTyreSizes } from "@/lib/fetchTyreSizes"
-import { normalizeTireSize } from "@/lib/woocommerce"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -138,6 +137,7 @@ function TireSizeSearch() {
       try {
         setLoading(true)
         const sizes = await fetchAllTyreSizes()
+        console.log("Завантажені розміри шин:", sizes)
         setAllSizes(sizes)
       } catch (error) {
         console.error("Error loading tire sizes:", error)
@@ -170,17 +170,17 @@ function TireSizeSearch() {
       return
     }
 
-    const normalizedSearchTerm = normalizeTireSize(searchTerm)
+    const searchTermLower = searchTerm.toLowerCase()
 
     const filtered = allSizes.filter((size) => {
-      // Нормалізуємо розмір для порівняння
-      const normalizedSize = normalizeTireSize(size)
+      const sizeLower = size.toLowerCase()
 
-      // Перевіряємо, чи один рядок містить інший після нормалізації
+      // Перевіряємо різні варіанти написання
       return (
-        normalizedSize.includes(normalizedSearchTerm) ||
-        normalizedSearchTerm.includes(normalizedSize) ||
-        size.toLowerCase().includes(searchTerm.toLowerCase())
+        sizeLower.includes(searchTermLower) ||
+        sizeLower.replace(/\//g, "-").includes(searchTermLower.replace(/\//g, "-")) ||
+        sizeLower.replace(/-/g, "/").includes(searchTermLower.replace(/-/g, "/")) ||
+        sizeLower.replace(/\s+/g, "").includes(searchTermLower.replace(/\s+/g, ""))
       )
     })
 
@@ -193,7 +193,7 @@ function TireSizeSearch() {
     setSearchTerm(size)
     setIsOpen(false)
 
-    // Використовуємо encodeURIComponent для правильного кодування URL
+    // Використовуємо sizeToSlug для правильного форматування URL
     router.push(`/shop?size=${encodeURIComponent(size)}`)
   }
 
@@ -211,23 +211,14 @@ function TireSizeSearch() {
       return
     }
 
-    // Якщо є співпадіння після нормалізації, використовуємо перше
-    const normalizedSearchTerm = normalizeTireSize(searchTerm)
-    const normalizedMatch = allSizes.find((size) => normalizeTireSize(size) === normalizedSearchTerm)
-
-    if (normalizedMatch) {
-      handleSizeSelect(normalizedMatch)
-      return
-    }
-
     // Якщо є хоча б часткові співпадіння, використовуємо перше
     if (filteredSizes.length > 0) {
       handleSizeSelect(filteredSizes[0])
       return
     }
 
-    // Якщо нічого не знайдено, просто переходимо на сторінку магазину
-    router.push("/shop")
+    // Якщо нічого не знайдено, просто переходимо на сторінку магазину з пошуковим запитом
+    router.push(`/shop?size=${encodeURIComponent(searchTerm)}`)
   }
 
   return (

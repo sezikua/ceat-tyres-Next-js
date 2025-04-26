@@ -9,6 +9,14 @@ if (!CONSUMER_KEY || !CONSUMER_SECRET) {
   console.warn("WooCommerce API keys are not set. Please check your environment variables.")
 }
 
+// Функція для перетворення розміру шини в slug
+export function sizeToSlug(size: string): string {
+  return size
+    .toLowerCase()
+    .replace(/[/.]/g, "-") // «750/75R46» → «750-75r46»
+    .replace(/\s+/g, "")
+}
+
 export async function getProducts(page = 1, perPage = 40): Promise<{ products: Product[]; totalPages: number }> {
   try {
     const response = await fetch(
@@ -53,22 +61,25 @@ export async function getProductById(id: number): Promise<Product | null> {
 
 export async function getAllTireSizes(): Promise<string[]> {
   try {
-    // Спеціальний запит для отримання всіх атрибутів розміру шин
-    // Використовуємо атрибути WooCommerce для отримання всіх можливих значень
-    const response = await fetch(
-      `${API_URL}/products/attributes?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+    // Спочатку отримуємо атрибут розміру
+    const attributesResponse = await fetch(
+      `${API_URL}/products/attributes?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&search=size`,
       { next: { revalidate: 3600 } },
     )
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch attributes: ${response.status}`)
+    if (!attributesResponse.ok) {
+      throw new Error(`Failed to fetch attributes: ${attributesResponse.status}`)
     }
 
-    const attributes = await response.json()
+    const attributes = await attributesResponse.json()
 
     // Знаходимо атрибут розміру (може мати різні назви)
     const sizeAttribute = attributes.find(
-      (attr: any) => attr.name.toLowerCase().includes("розмір") || attr.name.toLowerCase().includes("size"),
+      (attr: any) =>
+        attr.slug === "pa_size" ||
+        attr.slug === "pa_rozmir" ||
+        attr.name.toLowerCase().includes("розмір") ||
+        attr.name.toLowerCase().includes("size"),
     )
 
     if (!sizeAttribute) {
@@ -132,43 +143,13 @@ export function formatPrice(price: string): string {
   return `${Number.parseInt(price).toLocaleString("uk-UA")} ₴`
 }
 
-// Замінимо функцію normalizeTireSize на більш надійну версію:
-
-export function normalizeTireSize(size: string): string {
-  if (!size) return ""
-
-  // Перетворюємо на нижній регістр
-  let normalized = size.toLowerCase()
-
-  // Видаляємо всі пробіли
-  normalized = normalized.replace(/\s+/g, "")
-
-  // Замінюємо всі "/" на "-" (для сумісності з форматом "частина посилання")
-  normalized = normalized.replace(/\//g, "-")
-
-  // Замінюємо крапки на дефіси (для розмірів типу 26.5 -> 26-5)
-  normalized = normalized.replace(/\.(\d)/g, "-$1")
-
-  // Замінюємо "r" або "R" на "r" для уніфікації
-  normalized = normalized.replace(/r/gi, "r")
-
-  // Замінюємо подвійні дефіси на одинарні, якщо такі є
-  normalized = normalized.replace(/--+/g, "-")
-
-  // Видаляємо дефіси на початку і в кінці, якщо такі є
-  normalized = normalized.replace(/^-|-$/g, "")
-
-  return normalized
-}
-
 export function getTireSize(product: Product): string {
   // Спочатку шукаємо в атрибутах
   const sizeAttribute = product.attributes?.find(
     (attr) =>
-      attr.name.toLowerCase() === "розмір" ||
-      attr.name.toLowerCase() === "size" ||
-      attr.name.toLowerCase() === "розмір шини" ||
-      attr.name.toLowerCase() === "tire size",
+      attr.name.toLowerCase().includes("розмір") ||
+      attr.name.toLowerCase().includes("size") ||
+      attr.name.toLowerCase().includes("шин"),
   )
 
   if (sizeAttribute && sizeAttribute.options.length > 0) {
@@ -178,10 +159,9 @@ export function getTireSize(product: Product): string {
   // Потім шукаємо в мета-даних
   const sizeMeta = product.meta_data?.find(
     (meta) =>
-      meta.key.toLowerCase() === "розмір_шини" ||
-      meta.key.toLowerCase() === "tire_size" ||
-      meta.key.toLowerCase() === "pa_розмір" ||
-      meta.key.toLowerCase() === "pa_size",
+      meta.key.toLowerCase().includes("розмір") ||
+      meta.key.toLowerCase().includes("size") ||
+      meta.key.toLowerCase().includes("шин"),
   )
 
   if (sizeMeta) {
@@ -189,7 +169,7 @@ export function getTireSize(product: Product): string {
   }
 
   // Шукаємо в назві продукту
-  const nameMatch = product.name.match(/\d+\/\d+\s*R\s*\d+/i)
+  const nameMatch = product.name.match(/\d+[/-]\d+\s*[rR]\s*\d+/i)
   if (nameMatch) {
     return nameMatch[0]
   }
@@ -228,4 +208,163 @@ export function getUniqueTireSizes(products: Product[]): string[] {
   })
 
   return Array.from(sizes).sort()
+}
+
+// Нова функція для пошуку продуктів за розміром через API WooCommerce
+export async function searchProductsBySize(size: string): Promise<Product[]> {
+  try {
+    console.log(`Пошук продуктів з розміром: ${size}`)
+
+    // 1. Перетворюємо розмір в slug
+    const slug = sizeToSlug(size)
+    console.log(`Slug розміру: ${slug}`)
+
+    // 2. Отримуємо атрибут розміру
+    const attributesResponse = await fetch(
+      `${API_URL}/products/attributes?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&search=size`,
+      { next: { revalidate: 3600 } },
+    )
+
+    if (!attributesResponse.ok) {
+      throw new Error(`Failed to fetch attributes: ${attributesResponse.status}`)
+    }
+
+    const attributes = await attributesResponse.json()
+
+    // Знаходимо атрибут розміру
+    const sizeAttribute = attributes.find(
+      (attr: any) =>
+        attr.slug === "pa_size" ||
+        attr.slug === "pa_rozmir" ||
+        attr.name.toLowerCase().includes("розмір") ||
+        attr.name.toLowerCase().includes("size"),
+    )
+
+    if (!sizeAttribute) {
+      console.warn("Size attribute not found")
+      return []
+    }
+
+    console.log(
+      `Знайдено атрибут розміру: ${sizeAttribute.name} (id: ${sizeAttribute.id}, slug: ${sizeAttribute.slug})`,
+    )
+
+    // 3. Шукаємо термін (значення) атрибута за slug
+    const termsResponse = await fetch(
+      `${API_URL}/products/attributes/${sizeAttribute.id}/terms?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&slug=${slug}`,
+      { next: { revalidate: 3600 } },
+    )
+
+    if (!termsResponse.ok) {
+      throw new Error(`Failed to fetch attribute terms: ${termsResponse.status}`)
+    }
+
+    const terms = await termsResponse.json()
+
+    if (!terms.length) {
+      console.log(`Термін для розміру ${size} (slug: ${slug}) не знайдено`)
+
+      // Спробуємо знайти термін за іншими варіантами slug
+      const alternativeSlug = size
+        .toLowerCase()
+        .replace(/\//g, "-")
+        .replace(/\./g, "-")
+        .replace(/\s+/g, "")
+        .replace(/r/i, "r")
+
+      if (alternativeSlug !== slug) {
+        console.log(`Спроба пошуку за альтернативним slug: ${alternativeSlug}`)
+
+        const altTermsResponse = await fetch(
+          `${API_URL}/products/attributes/${sizeAttribute.id}/terms?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&slug=${alternativeSlug}`,
+          { next: { revalidate: 3600 } },
+        )
+
+        if (altTermsResponse.ok) {
+          const altTerms = await altTermsResponse.json()
+
+          if (altTerms.length) {
+            console.log(`Знайдено термін за альтернативним slug: ${altTerms[0].name} (id: ${altTerms[0].id})`)
+
+            // 4. Отримуємо продукти з цим терміном
+            const productsResponse = await fetch(
+              `${API_URL}/products?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&attribute=${sizeAttribute.slug}&attribute_term=${altTerms[0].id}&per_page=100`,
+              { next: { revalidate: 3600 } },
+            )
+
+            if (productsResponse.ok) {
+              const products = await productsResponse.json()
+              console.log(`Знайдено ${products.length} продуктів з розміром ${size}`)
+              return products
+            }
+          }
+        }
+      }
+
+      // Якщо не знайдено за slug, спробуємо пошук за назвою терміна
+      console.log(`Спроба пошуку за назвою терміна: ${size}`)
+
+      const allTermsResponse = await fetch(
+        `${API_URL}/products/attributes/${sizeAttribute.id}/terms?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&per_page=100`,
+        { next: { revalidate: 3600 } },
+      )
+
+      if (allTermsResponse.ok) {
+        const allTerms = await allTermsResponse.json()
+
+        // Шукаємо термін, який містить наш розмір
+        const matchingTerm = allTerms.find((term: any) => {
+          const termName = term.name.toLowerCase()
+          const searchSize = size.toLowerCase()
+
+          return (
+            termName === searchSize ||
+            termName.replace(/\//g, "-") === searchSize.replace(/\//g, "-") ||
+            termName.replace(/-/g, "/") === searchSize.replace(/-/g, "/") ||
+            termName.replace(/\s+/g, "") === searchSize.replace(/\s+/g, "") ||
+            termName.replace(/r/i, "r") === searchSize.replace(/r/i, "r")
+          )
+        })
+
+        if (matchingTerm) {
+          console.log(`Знайдено відповідний термін: ${matchingTerm.name} (id: ${matchingTerm.id})`)
+
+          // Отримуємо продукти з цим терміном
+          const productsResponse = await fetch(
+            `${API_URL}/products?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&attribute=${sizeAttribute.slug}&attribute_term=${matchingTerm.id}&per_page=100`,
+            { next: { revalidate: 3600 } },
+          )
+
+          if (productsResponse.ok) {
+            const products = await productsResponse.json()
+            console.log(`Знайдено ${products.length} продуктів з розміром ${size}`)
+            return products
+          }
+        }
+      }
+
+      // Якщо все ще не знайдено, повертаємо пустий масив
+      return []
+    }
+
+    console.log(`Знайдено термін: ${terms[0].name} (id: ${terms[0].id})`)
+
+    // 4. Отримуємо продукти з цим терміном
+    const productsResponse = await fetch(
+      `${API_URL}/products?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&attribute=${sizeAttribute.slug}&attribute_term=${terms[0].id}&per_page=100`,
+      { next: { revalidate: 3600 } },
+    )
+
+    if (!productsResponse.ok) {
+      throw new Error(`Failed to fetch products: ${productsResponse.status}`)
+    }
+
+    const products = await productsResponse.json()
+    console.log(`Знайдено ${products.length} продуктів з розміром ${size}`)
+
+    return products
+  } catch (error) {
+    console.error("Error searching products by size:", error)
+    return []
+  }
 }

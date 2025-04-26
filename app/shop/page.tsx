@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ProductCard } from "@/components/product-card"
-import { getProducts, getTireSize, normalizeTireSize } from "@/lib/woocommerce"
+import { getProducts, searchProductsBySize } from "@/lib/woocommerce"
 import type { Product } from "@/types/product"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -21,19 +21,14 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  async function fetchProducts(page = 1) {
+  // Функція для завантаження всіх продуктів
+  async function fetchAllProducts(page = 1) {
     try {
       setLoading(true)
       const { products: data, totalPages: pages } = await getProducts(page, 100)
       setProducts(data)
+      setFilteredProducts(data)
       setTotalPages(pages)
-
-      // Якщо вказано розмір, фільтруємо продукти на клієнті
-      if (sizeParam && sizeParam !== "all") {
-        filterProductsBySize(data, sizeParam)
-      } else {
-        setFilteredProducts(data)
-      }
     } catch (err) {
       setError("Помилка завантаження товарів. Спробуйте пізніше.")
       console.error(err)
@@ -42,51 +37,31 @@ export default function ShopPage() {
     }
   }
 
-  // Оновимо функцію filterProductsBySize для кращого логування та порівняння
-
-  function filterProductsBySize(products: Product[], size: string) {
-    const normalizedSearchSize = normalizeTireSize(size)
-
-    console.log("Шукаємо розмір:", size)
-    console.log("Нормалізований розмір для пошуку:", normalizedSearchSize)
-
-    const filtered = products.filter((product) => {
-      const tireSize = getTireSize(product)
-      const normalizedProductSize = normalizeTireSize(tireSize)
-
-      // Додаємо логування для відстеження
-      if (
-        normalizedProductSize.includes(normalizedSearchSize) ||
-        normalizedSearchSize.includes(normalizedProductSize)
-      ) {
-        console.log(
-          `СПІВПАДІННЯ - Продукт ${product.id}: розмір = ${tireSize}, нормалізований = ${normalizedProductSize}`,
-        )
-        return true
-      } else {
-        console.log(
-          `НЕ СПІВПАДАЄ - Продукт ${product.id}: розмір = ${tireSize}, нормалізований = ${normalizedProductSize}`,
-        )
-        return false
-      }
-    })
-
-    console.log(`Знайдено ${filtered.length} продуктів з розміром ${size}`)
-    setFilteredProducts(filtered)
+  // Функція для пошуку продуктів за розміром
+  async function fetchProductsBySize(size: string) {
+    try {
+      setLoading(true)
+      const matchingProducts = await searchProductsBySize(size)
+      setFilteredProducts(matchingProducts)
+    } catch (err) {
+      setError("Помилка пошуку товарів. Спробуйте пізніше.")
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
+  // Завантаження продуктів при зміні сторінки або параметра розміру
   useEffect(() => {
-    fetchProducts(currentPage)
-  }, [currentPage])
-
-  // Додатковий useEffect для фільтрації при зміні параметра URL
-  useEffect(() => {
-    if (products.length > 0 && sizeParam) {
-      filterProductsBySize(products, sizeParam)
-    } else if (products.length > 0) {
-      setFilteredProducts(products)
+    if (sizeParam) {
+      fetchProductsBySize(sizeParam)
+    } else {
+      fetchAllProducts(currentPage)
     }
-  }, [sizeParam, products])
+  }, [currentPage, sizeParam])
+
+  // Форматування розміру для відображення
+  const displaySize = sizeParam ? sizeParam.replace(/-/g, "/") : ""
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -96,16 +71,16 @@ export default function ShopPage() {
         <div className="container px-4 md:px-6 mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              {sizeParam && sizeParam !== "all" ? `Шини розміру ${sizeParam}` : "Магазин шин CEAT"}
+              {sizeParam ? `Шини розміру ${displaySize}` : "Магазин шин CEAT"}
             </h1>
             <p className="text-gray-600">
-              {sizeParam && sizeParam !== "all"
-                ? `Всі доступні моделі шин CEAT розміру ${sizeParam}`
+              {sizeParam
+                ? `Всі доступні моделі шин CEAT розміру ${displaySize}`
                 : "Знайдіть ідеальні шини для вашої сільськогосподарської техніки"}
             </p>
 
             {/* Кнопка для скидання фільтра */}
-            {sizeParam && sizeParam !== "all" && (
+            {sizeParam && (
               <Button variant="outline" onClick={() => (window.location.href = "/shop")} className="mt-4">
                 Показати всі шини
               </Button>
@@ -123,7 +98,7 @@ export default function ShopPage() {
               <h3 className="text-xl font-semibold mb-2">Товари не знайдено</h3>
               <p className="text-gray-600">
                 {sizeParam
-                  ? `Шини розміру ${sizeParam} відсутні в нашому каталозі. Спробуйте інший розмір.`
+                  ? `Шини розміру ${displaySize} відсутні в нашому каталозі. Спробуйте інший розмір.`
                   : "Спробуйте оновити сторінку або зв'язатися з нами"}
               </p>
             </div>
@@ -135,7 +110,7 @@ export default function ShopPage() {
             </div>
           )}
 
-          {!loading && !error && filteredProducts.length > 0 && (
+          {!loading && !error && filteredProducts.length > 0 && !sizeParam && (
             <div className="mt-10 flex justify-center">
               <div className="flex flex-wrap justify-center gap-2">
                 <Button
