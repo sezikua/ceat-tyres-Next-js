@@ -15,6 +15,7 @@ import { fetchAllTyreSizes } from "@/lib/fetchTyreSizes"
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [searchModalOpen, setSearchModalOpen] = useState(false)
 
   // Handle scroll for header transparency
   useEffect(() => {
@@ -80,7 +81,15 @@ export function Header() {
         </div>
 
         {/* Пошук шин по розміру */}
-        <TireSizeSearch />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white hover:bg-white/10 flex items-center gap-2 mb-4"
+          onClick={() => setSearchModalOpen(true)}
+        >
+          <Search className="h-4 w-4" />
+          <span>Пошук шин за розміром</span>
+        </Button>
       </div>
 
       {/* Mobile Navigation */}
@@ -110,6 +119,16 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  setSearchModalOpen(true)
+                }}
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Пошук шин за розміром
+              </Button>
               <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
                 Замовити консультацію
               </Button>
@@ -117,11 +136,45 @@ export function Header() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Модальне вікно пошуку шин */}
+      <AnimatePresence>
+        {searchModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setSearchModalOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              className="fixed top-20 left-0 right-0 mx-auto z-50 bg-white rounded-lg shadow-xl p-6 max-w-md"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Пошук шин за розміром</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => setSearchModalOpen(false)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+              <TireSizeSearch onSelect={() => setSearchModalOpen(false)} />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   )
 }
 
-function TireSizeSearch() {
+function TireSizeSearch({ onSelect }: { onSelect?: () => void }) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [isOpen, setIsOpen] = useState(false)
@@ -195,6 +248,9 @@ function TireSizeSearch() {
 
     // Використовуємо sizeToSlug для правильного форматування URL
     router.push(`/shop?size=${encodeURIComponent(size)}`)
+
+    // Викликаємо onSelect, якщо він переданий
+    if (onSelect) onSelect()
   }
 
   // Обробка відправки форми пошуку
@@ -219,28 +275,31 @@ function TireSizeSearch() {
 
     // Якщо нічого не знайдено, просто переходимо на сторінку магазину з пошуковим запитом
     router.push(`/shop?size=${encodeURIComponent(searchTerm)}`)
+
+    // Викликаємо onSelect, якщо він переданий
+    if (onSelect) onSelect()
   }
 
   return (
-    <div ref={searchRef} className="w-full max-w-md mx-auto mb-4 relative">
+    <div ref={searchRef} className="w-full relative">
       <form onSubmit={handleSubmit} className="relative">
         <Input
           type="text"
-          placeholder="Пошук шин за розміром (напр. 710/70R42)"
+          placeholder="Введіть розмір шини (напр. 710/70R42)"
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value)
             setIsOpen(true)
           }}
           onClick={() => setIsOpen(true)}
-          className="pl-10 pr-12 py-2 bg-white/10 backdrop-blur-sm text-white placeholder:text-white/70 border-white/30 focus:border-white"
+          className="pl-10 pr-12 py-2 bg-white border-gray-300 focus:border-blue-500"
         />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/70" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
         <Button
           type="submit"
           variant="ghost"
           size="icon"
-          className="absolute right-1 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/10"
+          className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 hover:bg-gray-100"
         >
           <Search className="h-4 w-4" />
         </Button>
