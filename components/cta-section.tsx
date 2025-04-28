@@ -31,17 +31,21 @@ export function CTASection() {
             Зв'яжіться з нами сьогодні, і наші експерти допоможуть вам обрати оптимальне рішення для ваших потреб
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button className="bg-white text-blue-700 hover:bg-white/90 px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
-              Замовити консультацію
-              <Phone className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-transparent border-white text-white hover:bg-white/10 px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              Завантажити каталог
-              <ChevronRight className="ml-2 h-5 w-5" />
-            </Button>
+            <a href="tel:+380504249510">
+              <Button className="bg-white text-blue-700 hover:bg-white/90 px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300">
+                <Phone className="ml-2 h-5 w-5" />
+                Замовити консультацію
+              </Button>
+            </a>
+            <a href="mailto:s.kostrov@agrosolar.com.ua">
+              <Button
+                variant="outline"
+                className="bg-transparent border-white text-white hover:bg-white/10 px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Завантажити каталог
+                <ChevronRight className="ml-2 h-5 w-5" />
+              </Button>
+            </a>
           </div>
         </motion.div>
       </div>

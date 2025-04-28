@@ -52,7 +52,7 @@ export function ContactForm() {
                   <ul className="space-y-4">
                     <li className="flex items-center">
                       <Phone className="h-5 w-5 mr-3 text-orange-500" />
-                      <a href="tel:+380501234567" className="hover:text-orange-500 transition-colors">
+                      <a href="tel:+380504249510" className="hover:text-orange-500 transition-colors">
                         +38 (050) 424-95-10
                       </a>
                     </li>
