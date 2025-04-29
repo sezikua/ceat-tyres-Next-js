@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ProductCard } from "@/components/product-card"
-import { getProducts, getTireSize, normalizeTireSize } from "@/lib/woocommerce"
+import { getProducts } from "@/lib/woocommerce"
+import { fetchProductsBySize } from "@/lib/fetchProductsBySize"
 import type { Product } from "@/types/product"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -21,18 +22,24 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
+  // Функція для завантаження продуктів
   async function fetchProducts(page = 1) {
     try {
       setLoading(true)
-      const { products: data, totalPages: pages } = await getProducts(page, 100)
-      setProducts(data)
-      setTotalPages(pages)
 
-      // Якщо вказано розмір, фільтруємо продукти на клієнті
+      // Якщо вказано розмір, використовуємо спеціальну функцію для пошуку за розміром
       if (sizeParam && sizeParam !== "all") {
-        filterProductsBySize(data, sizeParam)
+        console.log(`Шукаємо продукти з розміром: ${sizeParam}`)
+        const { products: sizeProducts, totalPages: sizePages } = await fetchProductsBySize(sizeParam, page)
+        setProducts(sizeProducts)
+        setFilteredProducts(sizeProducts)
+        setTotalPages(sizePages)
       } else {
-        setFilteredProducts(data)
+        // Інакше завантажуємо всі продукти
+        const { products: allProducts, totalPages: allPages } = await getProducts(page, 100)
+        setProducts(allProducts)
+        setFilteredProducts(allProducts)
+        setTotalPages(allPages)
       }
     } catch (err) {
       setError("Помилка завантаження товарів. Спробуйте пізніше.")
@@ -42,51 +49,17 @@ export default function ShopPage() {
     }
   }
 
-  // Оновимо функцію filterProductsBySize для кращого логування та порівняння
-
-  function filterProductsBySize(products: Product[], size: string) {
-    const normalizedSearchSize = normalizeTireSize(size)
-
-    console.log("Шукаємо розмір:", size)
-    console.log("Нормалізований розмір для пошуку:", normalizedSearchSize)
-
-    const filtered = products.filter((product) => {
-      const tireSize = getTireSize(product)
-      const normalizedProductSize = normalizeTireSize(tireSize)
-
-      // Додаємо логування для відстеження
-      if (
-        normalizedProductSize.includes(normalizedSearchSize) ||
-        normalizedSearchSize.includes(normalizedProductSize)
-      ) {
-        console.log(
-          `СПІВПАДІННЯ - Продукт ${product.id}: розмір = ${tireSize}, нормалізований = ${normalizedProductSize}`,
-        )
-        return true
-      } else {
-        console.log(
-          `НЕ СПІВПАДАЄ - Продукт ${product.id}: розмір = ${tireSize}, нормалізований = ${normalizedProductSize}`,
-        )
-        return false
-      }
-    })
-
-    console.log(`Знайдено ${filtered.length} продуктів з розміром ${size}`)
-    setFilteredProducts(filtered)
-  }
-
+  // Завантажуємо продукти при зміні сторінки
   useEffect(() => {
     fetchProducts(currentPage)
   }, [currentPage])
 
-  // Додатковий useEffect для фільтрації при зміні параметра URL
+  // Завантажуємо продукти при зміні параметра розміру
   useEffect(() => {
-    if (products.length > 0 && sizeParam) {
-      filterProductsBySize(products, sizeParam)
-    } else if (products.length > 0) {
-      setFilteredProducts(products)
-    }
-  }, [sizeParam, products])
+    // Скидаємо сторінку до 1 при зміні параметра розміру
+    setCurrentPage(1)
+    fetchProducts(1)
+  }, [sizeParam])
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -135,7 +108,7 @@ export default function ShopPage() {
             </div>
           )}
 
-          {!loading && !error && filteredProducts.length > 0 && (
+          {!loading && !error && filteredProducts.length > 0 && totalPages > 1 && (
             <div className="mt-10 flex justify-center">
               <div className="flex flex-wrap justify-center gap-2">
                 <Button

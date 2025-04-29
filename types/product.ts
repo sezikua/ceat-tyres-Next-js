@@ -7,10 +7,12 @@ export interface Product {
   permalink: string
   categories: Category[]
   brands: Brand[]
+  tags: Tag[] // Додаємо теги
   images: Image[]
   attributes: Attribute[]
   stock_status: string
   meta_data: MetaData[]
+  description?: string
 }
 
 export interface Category {
@@ -20,6 +22,12 @@ export interface Category {
 }
 
 export interface Brand {
+  id: number
+  name: string
+  slug: string
+}
+
+export interface Tag {
   id: number
   name: string
   slug: string

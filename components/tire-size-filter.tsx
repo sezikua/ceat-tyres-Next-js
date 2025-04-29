@@ -6,6 +6,7 @@ import { Loader2, ChevronDown, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { fetchAllTyreSizes } from "@/lib/fetchTyreSizes"
+import { normalizeTireSize } from "@/lib/woocommerce"
 
 export function TyreSizeFilter() {
   const router = useRouter()
@@ -26,6 +27,7 @@ export function TyreSizeFilter() {
       try {
         setLoading(true)
         const sizes = await fetchAllTyreSizes()
+        console.log(`Loaded ${sizes.length} tire sizes`)
         setAllSizes(sizes)
         setFilteredSizes(sizes)
       } catch (error) {
@@ -47,7 +49,21 @@ export function TyreSizeFilter() {
   // Filter sizes based on search term
   useEffect(() => {
     if (searchTerm) {
-      const filtered = allSizes.filter((size) => size.toLowerCase().includes(searchTerm.toLowerCase()))
+      const normalizedSearchTerm = normalizeTireSize(searchTerm)
+
+      const filtered = allSizes.filter((size) => {
+        const normalizedSize = normalizeTireSize(size)
+
+        return (
+          normalizedSize === normalizedSearchTerm ||
+          normalizedSize.includes(normalizedSearchTerm) ||
+          normalizedSearchTerm.includes(normalizedSize) ||
+          normalizedSize === normalizedSearchTerm.replace(/^(vf|if)/, "") ||
+          normalizedSearchTerm === normalizedSize.replace(/^(vf|if)/, "") ||
+          size.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      })
+
       setFilteredSizes(filtered)
     } else {
       setFilteredSizes(allSizes)

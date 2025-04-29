@@ -132,21 +132,23 @@ export function formatPrice(price: string): string {
   return `${Number.parseInt(price).toLocaleString("uk-UA")} ₴`
 }
 
-// Замінимо функцію normalizeTireSize на більш надійну версію:
-
+// Оновлена функція нормалізації розмірів шин
 export function normalizeTireSize(size: string): string {
   if (!size) return ""
 
   // Перетворюємо на нижній регістр
   let normalized = size.toLowerCase()
 
-  // Видаляємо всі пробіли
+  // Видаляємо префікс VF, IF, якщо він є
+  normalized = normalized.replace(/^(vf|if)\s*/i, "")
+
+  // Замінюємо всі пробіли
   normalized = normalized.replace(/\s+/g, "")
 
-  // Замінюємо всі "/" на "-" (для сумісності з форматом "частина посилання")
+  // Замінюємо всі "/" на "-"
   normalized = normalized.replace(/\//g, "-")
 
-  // Замінюємо крапки на дефіси (для розмірів типу 26.5 -> 26-5)
+  // Замінюємо крапки на дефіси (для розмірів типу 9.5L-15 -> 9-5l-15)
   normalized = normalized.replace(/\.(\d)/g, "-$1")
 
   // Замінюємо "r" або "R" на "r" для уніфікації
@@ -161,8 +163,39 @@ export function normalizeTireSize(size: string): string {
   return normalized
 }
 
+// Функція для отримання розміру шини з тегів продукту
+export function getTireSizeFromTags(product: Product): string | null {
+  if (!product.tags || product.tags.length === 0) {
+    return null
+  }
+
+  // Шукаємо тег, який схожий на розмір шини
+  for (const tag of product.tags) {
+    const tagName = tag.name || ""
+    // Перевіряємо, чи тег схожий на розмір шини
+    if (
+      /\d/.test(tagName) && // Містить хоча б одну цифру
+      (/\//.test(tagName) || // Містить /
+        /[rR]/.test(tagName) || // Містить R або r
+        /\./.test(tagName) || // Містить .
+        /-/.test(tagName) || // Містить -
+        /[lL]/.test(tagName)) // Містить L або l (для шин типу 9.5L-15)
+    ) {
+      return tagName
+    }
+  }
+
+  return null
+}
+
 export function getTireSize(product: Product): string {
-  // Спочатку шукаємо в атрибутах
+  // Спочатку шукаємо в тегах
+  const tagSize = getTireSizeFromTags(product)
+  if (tagSize) {
+    return tagSize
+  }
+
+  // Потім шукаємо в атрибутах
   const sizeAttribute = product.attributes?.find(
     (attr) =>
       attr.name.toLowerCase() === "розмір" ||

@@ -10,12 +10,15 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, ShoppingCart, Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { fetchAllTyreSizes } from "@/lib/fetchTyreSizes"
 import { normalizeTireSize } from "@/lib/woocommerce"
 
+// Замінюємо функцію Header
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [searchModalOpen, setSearchModalOpen] = useState(false)
 
   // Handle scroll for header transparency
   useEffect(() => {
@@ -32,107 +35,139 @@ export function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-40 w-full transition-all duration-300 bg-[#203F99] shadow-sm">
-      <div className="container flex flex-col items-center justify-between h-auto px-4 md:px-6">
-        <div className="w-full flex items-center justify-between h-20">
-          <Link href="/" className="flex items-center relative z-50">
-            <Image src="/images/ceat-logo.svg" alt="CEAT Logo" width={150} height={50} className="h-10 w-auto" />
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {[
-              { name: "Головна", path: "/" },
-              { name: "Магазин", path: "/shop" },
-              { name: "Про нас", path: "/about" },
-              { name: "Контакти", path: "/contacts" },
-            ].map((item, index) => (
-              <Link key={index} href={item.path} className="text-base font-medium relative group text-white">
-                {item.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <span className="text-sm font-medium text-white">🇺🇦 UA</span>
-            </div>
-
-            <Link href="/shop" className="hidden md:flex text-white hover:text-orange-200 mr-2">
-              <ShoppingCart className="h-6 w-6" />
+    <>
+      <header
+        className={`fixed top-0 left-0 right-0 z-40 w-full transition-all duration-300 ${scrolled ? "bg-[#203F99]/95 backdrop-blur-sm shadow-md" : "bg-[#203F99]"}`}
+      >
+        <div className="container flex flex-col items-center justify-between h-auto px-4 md:px-6">
+          <div className="w-full flex items-center justify-between h-20">
+            <Link href="/" className="flex items-center relative z-50">
+              <Image src="/images/ceat-logo.svg" alt="CEAT Logo" width={150} height={50} className="h-10 w-auto" />
             </Link>
 
-            <a href="tel:+380504249510">
-              <Button className="hidden md:flex bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-full">
-                Замовити консультацію
-              </Button>
-            </a>
-
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden text-white"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Пошук шин по розміру */}
-        <TireSizeSearch />
-      </div>
-
-      {/* Mobile Navigation */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden bg-white border-t"
-          >
-            <div className="container py-4 px-4 space-y-4">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-8">
               {[
                 { name: "Головна", path: "/" },
                 { name: "Магазин", path: "/shop" },
                 { name: "Про нас", path: "/about" },
                 { name: "Контакти", path: "/contacts" },
               ].map((item, index) => (
-                <Link
-                  key={index}
-                  href={item.path}
-                  className="block py-2 text-lg font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
+                <Link key={index} href={item.path} className="text-base font-medium relative group text-white">
                   {item.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-300 group-hover:w-full"></span>
                 </Link>
               ))}
+            </nav>
+
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => setSearchModalOpen(true)}
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border-white/30 px-4 py-2 rounded-full"
+              >
+                <Search className="h-4 w-4" />
+                <span>Пошук шин за розміром</span>
+              </Button>
+
+              <div className="flex items-center ml-4">
+                <span className="text-sm font-medium text-white">🇺🇦 UA</span>
+              </div>
+
+              <Link href="/shop" className="hidden md:flex text-white hover:text-orange-200 mr-2">
+                <ShoppingCart className="h-6 w-6" />
+              </Link>
+
               <a href="tel:+380504249510">
-                <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
+                <Button className="hidden md:flex bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-full">
                   Замовити консультацію
                 </Button>
               </a>
+
+              {/* Mobile menu button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden text-white"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="md:hidden bg-white border-t"
+            >
+              <div className="container py-4 px-4 space-y-4">
+                <div className="mb-4">
+                  <Button
+                    onClick={() => {
+                      setSearchModalOpen(true)
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <Search className="h-4 w-4" />
+                    <span>Пошук шин за розміром</span>
+                  </Button>
+                </div>
+                {[
+                  { name: "Головна", path: "/" },
+                  { name: "Магазин", path: "/shop" },
+                  { name: "Про нас", path: "/about" },
+                  { name: "Контакти", path: "/contacts" },
+                ].map((item, index) => (
+                  <Link
+                    key={index}
+                    href={item.path}
+                    className="block py-2 text-lg font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+                <a href="tel:+380504249510">
+                  <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
+                    Замовити консультацію
+                  </Button>
+                </a>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
+      {/* Модальне вікно пошуку шин */}
+      <TireSizeSearchModal open={searchModalOpen} onOpenChange={setSearchModalOpen} />
+    </>
   )
 }
 
-function TireSizeSearch() {
+// Замінюємо функцію TireSizeSearch на TireSizeSearchModal
+function TireSizeSearchModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
-  const [isOpen, setIsOpen] = useState(false)
   const [allSizes, setAllSizes] = useState<string[]>([])
   const [filteredSizes, setFilteredSizes] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
-  const [selectedSize, setSelectedSize] = useState<string | null>(null)
-  const searchRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Фокус на інпуті при відкритті модального вікна
+  useEffect(() => {
+    if (open && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
+  }, [open])
 
   // Завантаження всіх розмірів шин
   useEffect(() => {
@@ -140,6 +175,7 @@ function TireSizeSearch() {
       try {
         setLoading(true)
         const sizes = await fetchAllTyreSizes()
+        console.log(`Loaded ${sizes.length} tire sizes in modal`)
         setAllSizes(sizes)
       } catch (error) {
         console.error("Error loading tire sizes:", error)
@@ -148,22 +184,10 @@ function TireSizeSearch() {
       }
     }
 
-    loadSizes()
-  }, [])
-
-  // Закриття випадаючого списку при кліку поза ним
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
+    if (open) {
+      loadSizes()
     }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
+  }, [open])
 
   // Фільтрація розмірів на основі пошукового запиту
   useEffect(() => {
@@ -178,22 +202,29 @@ function TireSizeSearch() {
       // Нормалізуємо розмір для порівняння
       const normalizedSize = normalizeTireSize(size)
 
-      // Перевіряємо, чи один рядок містить інший після нормалізації
+      // Перевіряємо різні варіанти співпадіння
       return (
-        normalizedSize.includes(normalizedSearchTerm) ||
-        normalizedSearchTerm.includes(normalizedSize) ||
-        size.toLowerCase().includes(searchTerm.toLowerCase())
+        normalizedSize === normalizedSearchTerm || // Точне співпадіння після нормалізації
+        normalizedSize.includes(normalizedSearchTerm) || // Частковий збіг (пошуковий термін є частиною розміру)
+        normalizedSearchTerm.includes(normalizedSize) || // Частковий збіг (розмір є частиною пошукового терміну)
+        // Додаткова перевірка для розмірів з префіксами VF, IF
+        normalizedSize === normalizedSearchTerm.replace(/^(vf|if)/, "") ||
+        normalizedSearchTerm === normalizedSize.replace(/^(vf|if)/, "") ||
+        // Перевірка на співпадіння без урахування пробілів та регістру
+        size
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .includes(searchTerm.toLowerCase().replace(/\s+/g, ""))
       )
     })
 
-    setFilteredSizes(filtered.slice(0, 10)) // Обмежуємо кількість результатів
+    setFilteredSizes(filtered.slice(0, 15)) // Обмежуємо кількість результатів
   }, [searchTerm, allSizes])
 
   // Обробка вибору розміру
   const handleSizeSelect = (size: string) => {
-    setSelectedSize(size)
     setSearchTerm(size)
-    setIsOpen(false)
+    onOpenChange(false)
 
     // Використовуємо encodeURIComponent для правильного кодування URL
     router.push(`/shop?size=${encodeURIComponent(size)}`)
@@ -229,66 +260,68 @@ function TireSizeSearch() {
     }
 
     // Якщо нічого не знайдено, просто переходимо на сторінку магазину
+    onOpenChange(false)
     router.push("/shop")
   }
 
   return (
-    <div ref={searchRef} className="w-full max-w-md mx-auto mb-4 relative">
-      <form onSubmit={handleSubmit} className="relative">
-        <Input
-          type="text"
-          placeholder="Пошук шин за розміром (напр. 710/70R42)"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value)
-            setIsOpen(true)
-          }}
-          onClick={() => setIsOpen(true)}
-          className="pl-10 pr-12 py-2 bg-white/10 backdrop-blur-sm text-white placeholder:text-white/70 border-white/30 focus:border-white"
-        />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/70" />
-        <Button
-          type="submit"
-          variant="ghost"
-          size="icon"
-          className="absolute right-1 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/10"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-      </form>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md md:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-center text-xl font-bold">Пошук шин за розміром</DialogTitle>
+        </DialogHeader>
+        <div className="p-4">
+          <form onSubmit={handleSubmit} className="relative mb-4">
+            <Input
+              ref={inputRef}
+              type="text"
+              placeholder="Введіть розмір шини (напр. 710/70R42)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-12 py-6 text-lg"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Button
+              type="submit"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          </form>
 
-      <AnimatePresence>
-        {isOpen && (searchTerm.trim() !== "" || loading) && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute z-50 mt-1 w-full bg-white rounded-md shadow-xl max-h-80 overflow-y-auto"
-          >
+          <div className="max-h-[300px] overflow-y-auto rounded-md border">
             {loading ? (
-              <div className="p-4 text-center text-gray-500 flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Завантаження розмірів...
+              <div className="p-6 text-center text-gray-500 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Завантаження розмірів шин...</span>
               </div>
             ) : filteredSizes.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                {searchTerm.trim() === "" ? "Введіть розмір шини" : "Розміри не знайдено"}
+              <div className="p-6 text-center text-gray-500">
+                {searchTerm.trim() === "" ? "Введіть розмір шини для пошуку" : "Розміри не знайдено"}
               </div>
             ) : (
               filteredSizes.map((size, index) => (
                 <div
                   key={index}
-                  className="p-3 hover:bg-gray-100 cursor-pointer"
+                  className="p-4 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 transition-colors"
                   onClick={() => handleSizeSelect(size)}
                 >
-                  {size}
+                  <div className="flex items-center">
+                    <Search className="h-4 w-4 text-gray-400 mr-3" />
+                    <span className="text-lg">{size}</span>
+                  </div>
                 </div>
               ))
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          </div>
+
+          <div className="mt-6 text-center text-gray-500 text-sm">
+            <p>Знайдіть ідеальні шини CEAT для вашої сільськогосподарської техніки</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

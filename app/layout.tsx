@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uk">
-      <body className={inter.className}>
+      <body className={`${inter.className} pt-20`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>
