@@ -50,6 +50,7 @@ export function Header() {
               {[
                 { name: "Головна", path: "/" },
                 { name: "Магазин", path: "/shop" },
+                { name: "Блог", path: "/blog" },
                 { name: "Про нас", path: "/about" },
                 { name: "Контакти", path: "/contacts" },
               ].map((item, index) => (
@@ -122,6 +123,7 @@ export function Header() {
                 {[
                   { name: "Головна", path: "/" },
                   { name: "Магазин", path: "/shop" },
+                  { name: "Блог", path: "/blog" },
                   { name: "Про нас", path: "/about" },
                   { name: "Контакти", path: "/contacts" },
                 ].map((item, index) => (
